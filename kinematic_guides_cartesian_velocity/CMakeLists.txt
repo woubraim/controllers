@@ -17,7 +17,10 @@ find_package(tf2_geometry_msgs REQUIRED)
 find_package(robot_interfaces REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(extender_msgs REQUIRED)
-find_package(apriltag_ros2 REQUIRED)
+#find_package(apriltag_ros2 REQUIRED)
+find_package(visual_servoing REQUIRED)
+find_package(controller_interface REQUIRED) 
+find_package(pluginlib REQUIRED)
 
 include_directories(
   include
@@ -25,7 +28,7 @@ include_directories(
 )
 
 add_library(${PROJECT_NAME} SHARED
-  src/shared_control_cartesian_velocity.cpp
+  src/shared_control.cpp
 )
 ament_target_dependencies(${PROJECT_NAME}
   rclcpp
@@ -38,7 +41,10 @@ ament_target_dependencies(${PROJECT_NAME}
   visualization_msgs
   tf2_ros
   tf2_geometry_msgs
-  apriltag_ros2
+  #apriltag_ros2
+  visual_servoing
+  controller_interface
+  pluginlib
 )
 
 # Register your controller class as a component
@@ -66,7 +72,6 @@ install(DIRECTORY config launch rviz
 pluginlib_export_plugin_description_file(
         controller_interface config/kinematic_guides_cartesian.xml)
 
-ament_package()
 
 # Standalone RViz marker publisher node
 add_executable(goal_marker_publisher src/goal_marker_publisher.cpp)
@@ -83,3 +88,5 @@ ament_target_dependencies(goal_marker_publisher
 install(TARGETS goal_marker_publisher
   RUNTIME DESTINATION lib/${PROJECT_NAME}
 )
+
+ament_package()

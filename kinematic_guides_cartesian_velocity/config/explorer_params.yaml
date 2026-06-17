@@ -52,18 +52,24 @@ kinematic_guides_cartesian_velocity:
 
     # Low-pass filter
     #filter_cutoff_frequency: 0.8 # Hz
-    initial_filter_cutoff_frequency: 6.0 # Hz
-    final_filter_cutoff_frequency: 12.0 # Hz
+    #initial_filter_cutoff_frequency: 6.0 # Hz
+    #final_filter_cutoff_frequency: 12.0 # Hz
+    
+    initial_filter_cutoff_frequency: 0.0 # Hz
+    final_filter_cutoff_frequency: 0.0 # Hz
 
     # Multi-target estimation: all goals are 6D
     # Default gripper orientation quaternion: [1.000, 0.003, 0.004, -0.001]
-    goals_poses: [0., -0., 0., 0., 0., 0.7071, 0.7071] # experiment with two goals and changing target on run
+    #goals_poses: [0., -0., 0., 0., 0., 0.7071, 0.7071] # experiment with two goals and changing target on run
+    #goals_poses: []
     #goals_poses: [0.539, -0.066, 0.364, 0.901, 0.021, 0.433, 0.009] # experiment with 6D goal close
     # NOTE: quaternion order is (qx, qy, qz, qw) and should be unit-norm.
 
-    known_goals_poses: [0., 0., 0., 0., 0., 0.7071, 0.7071] # experiment with two goals and changing target on run
+    #known_goals_poses: [0., 0., 0., 0., 0., 0.7071, 0.7071] # experiment with two goals and changing target on run
+    #known_goals_poses: []
+    #known_goals_labels: []
     #known_goals_poses: [0.539, -0.066, 0.364, 0.901, 0.021, 0.433, 0.009] # experiment with 6D goal close
-    known_goals_labels:    ["Bin A"]
+    #known_goals_labels:    []
 
     # Cartesian velocity saturation
     max_linear_delta: 0.0005 #0.0005
@@ -86,8 +92,8 @@ kinematic_guides_cartesian_velocity:
     # Forward Kinematics Configuration (URDF-driven)
     # Frame names must match the robot URDF model
     base_frame: "base_link"
-    tool_frame: "tool0"
-    input_twist_frame: "base"  # "base" or "ee"
+    tool_frame: "ft_frame"
+    input_twist_frame: "ee"  # "base" or "ee"
     # Use RT joint buffer for FK readings (default false; rely on joint_states)
     use_rt_joint_buffer: false
     command_names:
@@ -117,5 +123,7 @@ goal_marker_publisher:
     soft_goal_topic:    "/debug/soft_goal"
     raw_velocity_topic: "/debug/raw_velocity"
 
-    goal_positions: [0.,0., 0.] # experiment with two goals and changing target on run
+    #goal_positions: [0.,0., 0.] # experiment with two goals and changing target on run
+    #goal_positions: [] # experiment with two goals and changing target on run
+    #goal_positions: []
     

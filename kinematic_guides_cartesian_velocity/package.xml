@@ -19,8 +19,10 @@
   <depend>robot_interfaces</depend>
   <depend>extender_msgs</depend>
   <depend>controller_manager</depend>
-
+  <depend>visual_servoing</depend>
   <depend>joystick_interface</depend>
+  <depend>controller_interface</depend>
+  <depend>pluginlib</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>
