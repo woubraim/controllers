@@ -93,7 +93,7 @@ kinematic_guides_cartesian_velocity:
     # Frame names must match the robot URDF model
     base_frame: "base_link"
     tool_frame: "ft_frame"
-    input_twist_frame: "ee"  # "base" or "ee"
+    input_twist_frame: "base"  # "base" or "ee"
     # Use RT joint buffer for FK readings (default false; rely on joint_states)
     use_rt_joint_buffer: false
     command_names:

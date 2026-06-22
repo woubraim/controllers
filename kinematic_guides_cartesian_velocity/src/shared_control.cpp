@@ -96,13 +96,13 @@ namespace cartesian_velocity_controller
     // This controller only consumes those already-transformed goals and updates
     // the shared-control goal set. It does not run AprilTag detection, TF camera
     // transforms, or OpenCV display; those are handled by the visual_servoing package.
-    goals_sub_ = get_node()->create_subscription<visual_servoing::msg::DetectedGoalArray>(
+    /*goals_sub_ = get_node()->create_subscription<visual_servoing::msg::DetectedGoalArray>(
         "/visual_servoing/detected_goals",
         10,
         std::bind(
             &SharedControlVelocityController::goalsCallback,
             this,
-            std::placeholders::_1));
+            std::placeholders::_1));*/
 
     return CallbackReturn::SUCCESS;
   }
@@ -924,10 +924,10 @@ namespace cartesian_velocity_controller
     // (angle ε_r and unit axis ŵ)
     // ------------------------------------------------------------
     //202606
-    //const RotationError rotation_error = computeRotationError(soft_goal.q, current_orientation);
-    //const double epsilon_r = rotation_error.angle;
-    //const Eigen::Vector3d unit_axis_w =
-        //(epsilon_r > 0.0) ? rotation_error.axis : Eigen::Vector3d::Zero();
+    const RotationError rotation_error = computeRotationError(soft_goal.q, current_orientation);
+    const double epsilon_r = rotation_error.angle;
+    const Eigen::Vector3d unit_axis_w =
+        (epsilon_r > 0.0) ? rotation_error.axis : Eigen::Vector3d::Zero();
     // ------------------------------------------------------------
     // Z-axis-only alignment:
     // Align camera/tool Z axis with goal/tag Z axis.
@@ -951,7 +951,9 @@ namespace cartesian_velocity_controller
     //{
      // unit_axis_w = Eigen::Vector3d::Zero(); // if current and goal Z are aligned, no preferred rotation axis
     //}
-    const Eigen::Vector3d R_BE = current_orientation_.toRotationMatrix().col(2); // current end-effector Z axis in base frame
+
+
+    /*const Eigen::Vector3d R_BE = current_orientation_.toRotationMatrix().col(2); // current end-effector Z axis in base frame
     const Eigen::Vector3d R_GB = soft_goal.q.toRotationMatrix().col(2); // goal Z axis in base frame
     const double epsilon_r = std::acos(std::clamp(R_BE.dot(R_GB), -1.0, 1.0));
     RCLCPP_INFO(get_node()->get_logger(), "%lf", epsilon_r);
@@ -964,6 +966,7 @@ namespace cartesian_velocity_controller
     {
       unit_axis_w = Eigen::Vector3d::Zero(); // if current and goal Z are aligned, no preferred rotation axis
     }
+    */
 
 
     // ------------------------------------------------------------
@@ -1004,14 +1007,15 @@ namespace cartesian_velocity_controller
     // Eq. (16) (17) Orientation error: log(q_G q_E^{-1}) = ε_r * ŵ
     // (angle ε_r and unit axis ŵ)
     // ------------------------------------------------------------
-    //const RotationError rotation_error = computeRotationError(soft_goal.q, current_orientation);
-    //const double epsilon_r = rotation_error.angle;
-    //const Eigen::Vector3d unit_axis_w =
-        //(epsilon_r > 0.0) ? rotation_error.axis : Eigen::Vector3d::Zero();
-    // Axis-only alignment for rotation mode:
+    const RotationError rotation_error = computeRotationError(soft_goal.q, current_orientation);
+    const double epsilon_r = rotation_error.angle;
+    const Eigen::Vector3d unit_axis_w =
+        (epsilon_r > 0.0) ? rotation_error.axis : Eigen::Vector3d::Zero();
+    
+    /*    // Axis-only alignment for rotation mode:
     // align robot/tool local X axis with goal/tag local Z axis.
-    // This avoids matching the full AprilTag quaternion.
-    const Eigen::Vector3d approach_current = current_orientation * Eigen::Vector3d::UnitX();
+    // This avoids matching the full AprilTag quaternion.*/
+    /*const Eigen::Vector3d approach_current = current_orientation * Eigen::Vector3d::UnitX();
 
     const Eigen::Vector3d z_goal = soft_goal.q * Eigen::Vector3d::UnitZ();
 
@@ -1027,7 +1031,7 @@ namespace cartesian_velocity_controller
     {
       unit_axis_w = Eigen::Vector3d::Zero();
     }
-        
+    */    
 
     // --- Eq. (18) σ_r(ε_r) gate ---
     const double sigma_r = sigmaR(epsilon_r);
@@ -1432,8 +1436,7 @@ void SharedControlVelocityController::goalsCallback(
     // ---------------------------------------------------------------------------
     // No visible AprilTags
     // ---------------------------------------------------------------------------
-    // Remove only AprilTag dynamic goals. Keep G0 and parameter/static goals.
-    if (msg->goals.empty())
+    /*if (msg->goals.empty())
     {
       for (const auto &[tag_id, goal_key] : active_goal_key_by_tag_id_)
       {
@@ -1447,7 +1450,20 @@ void SharedControlVelocityController::goalsCallback(
           "No AprilTag goals received. Removed all active AprilTag goals.");
 
       return;
+    }*/
+    // Keep last known AprilTag goals. If a tag disappears, we assume its pose in
+    // the world did not change until it is detected again.
+    if (msg->goals.empty())
+    {
+      RCLCPP_WARN_THROTTLE(
+          get_node()->get_logger(),
+          *get_node()->get_clock(),
+          2000,
+          "No AprilTag goals received. Keeping last known AprilTag goals.");
+
+      return;
     }
+
 
     std::unordered_set<int> seen_ids;
 
@@ -1542,7 +1558,7 @@ void SharedControlVelocityController::goalsCallback(
     // ---------------------------------------------------------------------------
     // Remove AprilTag goals that disappeared
     // ---------------------------------------------------------------------------
-    for (auto it = active_goal_key_by_tag_id_.begin();
+    /*for (auto it = active_goal_key_by_tag_id_.begin();
         it != active_goal_key_by_tag_id_.end();)
     {
       const int tag_id = it->first;
@@ -1564,7 +1580,8 @@ void SharedControlVelocityController::goalsCallback(
       {
         ++it;
       }
-    }
+    }*/
+    (void)seen_ids;
   }
 
 
