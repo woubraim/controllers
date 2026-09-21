@@ -589,6 +589,14 @@ namespace cartesian_velocity_controller
     std::vector<std::string> command_names_; ///< Names of the command interfaces.
 
     //202603
+    std::string shared_control_law_ = "amplication"; //
+    double lambda_blend_ = 0.5;
+    std::pair<Eigen::Vector3d, Eigen::Vector3d> applyBlendModeT(
+      const Goal &soft_goal,
+      const Eigen::Vector3d &current_position,
+      const Eigen::Quaterniond &current_orientation,
+      const Eigen::Vector3d &user_linear_velocity);
+
     void goalsCallback(const visual_servoing::msg::DetectedGoalArray::SharedPtr msg);
     std::unordered_map<int, Goal> detected_goals_memory_;
     std::unordered_map<int, std::string> active_goal_key_by_tag_id_;

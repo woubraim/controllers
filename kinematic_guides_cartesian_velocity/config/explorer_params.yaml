@@ -31,6 +31,7 @@ qontrol_explorer:
     open_loop: True
     input_topic_name: /explorer_user_interfaces/rqt_armcontrol/input_device_velocity
     regularisation_weight: 1e-2
+    #regularisation_weight:  0.1
     root_frame_control: True
     deadzone: 0.1
     velocity_limit: 0.5
@@ -49,6 +50,10 @@ kinematic_guides_cartesian_velocity:
     enable_shared_control_assistance: true
     enable_velocity_saturation: true
     enable_debug_publish: true
+
+    #202603
+    shared_control_law: "amplification" # "amplification" or "blend"
+    lambda_blend: 0.5 # only for blend
 
     # Low-pass filter
     #filter_cutoff_frequency: 0.8 # Hz
@@ -75,19 +80,19 @@ kinematic_guides_cartesian_velocity:
     max_linear_delta: 0.0005 #0.0005
     max_angular_delta: 0.0005 #0.0005
 
-    # Goals confidence 
-    alpha_conf:    1.5        # [s^-1] #after fix in eq of c_dot using the normalization
-    theta_l_deg:   30.0       # [deg]
-    r1:            0.04       # [m]
-    r2:            0.02       # [m]
-    v_j_max:       0.055      # [m/s]
-    gamma:         2.0
-    theta1_deg:    15.0       # [deg]
-    theta2_deg:    5.0        # [deg]
+    # Goals confidence               #after fix in eq of c_dot using the normalization  
+    alpha_conf:    1.5        # [s^-1] # confidence speed gain; higher = confidence changes faster
+    theta_l_deg:   30.0       # [deg]  # intention cone angle; higher = more tolerant direction detection
+    r1:            0.04       # [m]    # outer distance threshold; assistance starts decreasing below this
+    r2:            0.02       # [m]    # inner distance threshold; assistance is zero below this
+    v_j_max:       0.055      # [m/s]  # joystick speed reference for confidence; lower = more sensitive
+    gamma:         2.0                 # amplification gain; higher = stronger help toward soft goal
+    theta1_deg:    15.0       # [deg]  # rotation error high threshold; assistance fully active above this
+    theta2_deg:    5.0        # [deg]  # rotation error low threshold; assistance zero below this
     # Reach goal params
-    eps_t_reach_m:    0.01
-    eps_r_reach_deg:  10.0
-    reach_dwell_ms:   300
+    eps_t_reach_m:    0.01    # position tolerance to validate goal
+    eps_r_reach_deg:  10.0    # orientation tolerance to validate goal
+    reach_dwell_ms:   300     # time inside tolerance before goal is confirmed
     robot_type: "explorer_velocity"
     # Forward Kinematics Configuration (URDF-driven)
     # Frame names must match the robot URDF model
