@@ -144,6 +144,12 @@ namespace cartesian_velocity_controller
 
     declare_and_get_parameters("eps_t_reach_m", eps_t_reach_, 0.01);
     declare_and_get_parameters("reach_dwell_ms", dwell_ms_, 300);
+
+    //202603
+    declare_and_get_parameters("shared_control_law", shared_control_law_, std::string("amplification"));
+    declare_and_get_parameters("lambda_blend", lambda_blend_, 0.5);
+
+    lambda_blend_ = std::clamp(lambda_blend_, 0.0, 1.0);
   }
 
   bool SharedControlVelocityController::configure_goals()
@@ -460,11 +466,24 @@ namespace cartesian_velocity_controller
       {
       case Mode::TRANSLATION_ROTATION: { // MODE T
 
-        auto [shaped_velocity, shaped_omega] = applySharedControlModeT(
+        //202603
+        /*auto [shaped_velocity, shaped_omega] = applySharedControlModeT(
             soft_goal, current_position_, current_orientation_, initial_filtered_linear_velocity);
 
         cartesian_linear_velocity = shaped_velocity;
         cartesian_angular_velocity = shaped_omega;
+        break;*/
+        std::pair<Eigen::Vector3d, Eigen::Vector3d> command;
+        if(shared_control_law_ == "blend")
+        {
+          command = applyBlendModeT(soft_goal, current_position_, current_orientation_, initial_filtered_linear_velocity);
+        }
+        else
+        {
+          command = applySharedControlModeT(soft_goal, current_position_, current_orientation_, initial_filtered_linear_velocity);
+        }
+        cartesian_linear_velocity = command.first;
+        cartesian_angular_velocity = command.second;
         break;
       }
       case Mode::ROTATION: { // MODE W
@@ -1425,7 +1444,7 @@ namespace cartesian_velocity_controller
   }
 
   //202603
-void SharedControlVelocityController::goalsCallback(
+  void SharedControlVelocityController::goalsCallback(
     const visual_servoing::msg::DetectedGoalArray::SharedPtr msg)
   {
     RCLCPP_INFO(
@@ -1582,6 +1601,78 @@ void SharedControlVelocityController::goalsCallback(
       }
     }*/
     (void)seen_ids;
+  }
+  /**
+  * @brief Classical shared-control blending law for translation mode.
+  *
+  * This function implements the standard shared-control formulation:
+  *
+  *     u = lambda * u_h + (1 - lambda) * u_m
+  *
+  * where:
+  * - u_h is the human command coming from the joystick,
+  * - u_m is the autonomous command pointing toward the soft goal,
+  * - lambda controls the human/autonomy balance.
+  *
+  * lambda_blend_ = 1.0 means full human control.
+  * lambda_blend_ = 0.0 means full autonomous guidance toward the goal.
+  *
+  * To keep the robot passive when the user does not move the joystick,
+  * the autonomous command u_m is scaled with the current joystick speed.
+  * Therefore, if the user command is zero, the output command is also zero.
+  *
+  * @param soft_goal Current shared-control soft goal.
+  * @param current_position Current end-effector position in the base frame.
+  * @param current_orientation Current end-effector orientation in the base frame.
+  * @param user_linear_velocity Human linear velocity command from the joystick.
+  * @return Pair containing the blended linear velocity and the associated angular velocity.
+  */
+  std::pair<Eigen::Vector3d, Eigen::Vector3d>
+  SharedControlVelocityController::applyBlendModeT(
+      const Goal &soft_goal,
+      const Eigen::Vector3d &current_position,
+      const Eigen::Quaterniond &current_orientation,
+      const Eigen::Vector3d &user_linear_velocity)
+  {
+    (void)current_orientation;
+
+    // Human command u_h and its magnitude.
+    const Eigen::Vector3d u_h = user_linear_velocity;
+    const double user_speed = u_h.norm();
+
+    // If the user is not commanding motion, the robot must remain still.
+    if (user_speed < 1e-6)
+    {
+      return {Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero()};
+    }
+
+    // Direction from the current end-effector position to the soft goal.
+    const Eigen::Vector3d goal_direction = soft_goal.x - current_position;
+    const double goal_distance = goal_direction.norm();
+
+    // If the end-effector is already at the goal
+    if (goal_distance < 1e-6)
+    {
+      return {u_h, computeBaselineAngularVelocity(current_position, u_h)};
+      //return {Eigen::Vector3d::Zero(), Eigen::Vector3d::Zero()};
+    }
+
+    // Autonomous command u_m:
+    // same speed as the human command, but directed toward the soft goal.
+    const Eigen::Vector3d u_m = user_speed * goal_direction.normalized();
+
+    // Classical shared-control blend:
+    // lambda_blend_ weights the human command,
+    // (1 - lambda_blend_) weights the autonomous command.
+    const Eigen::Vector3d blended_linear_velocity =
+        lambda_blend_ * u_h + (1.0 - lambda_blend_) * u_m;
+
+    // Reuse the baseline angular velocity used in translation mode
+    // to keep the wrist orientation behavior consistent with the existing controller.
+    const Eigen::Vector3d blended_angular_velocity =
+        computeBaselineAngularVelocity(current_position, blended_linear_velocity);
+
+    return {blended_linear_velocity, blended_angular_velocity};
   }
 
 
